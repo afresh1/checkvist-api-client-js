@@ -1,72 +1,8 @@
-// $Id: checkvist_api.js,v 1.2 2011/08/12 02:36:54 andrew Exp $
+// $Id: checkvist_api.js,v 1.3 2011/08/12 03:01:27 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
 
     spec.baseURL = spec.baseURL || 'https://checkvist.com/';
-
-    serialize = function(obj) {
-        var str = [];
-        for(var p in obj)
-            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-        return str.join("&");
-    }
-
-    var ajax = function(s) {
-        s.params = s.params || {};
-        if (spec.token) {
-            s.params.token = spec.token;
-        }
-
-        var u = spec.baseURL + s.url;
-        var qs = serialize(s.params);
-
-        s.method = s.method.toLowerCase();
-        if (s.method === 'get') {
-            u += '?' + qs;
-            qs = null;
-        }
-
-        console.log('make request', s.method, u, qs);
-
-        var xhReq = new XMLHttpRequest();
-        xhReq.open(s.method, u, false);
-        if (s.method === 'post' || s.method === 'put') {
-            xhReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        }
-        if (qs) {
-            xhReq.setRequestHeader("Content-length", qs.length);
-        }
-        xhReq.setRequestHeader("Connection", "close");
-
-        xhReq.onreadystatechange = function(e) {
-            console.log(xhReq.readyState, spec);
-            if (xhReq.readyState !== 4) { return }
-
-            if (xhReq.status === 200) {
-                if (s.success) {
-                    s.success(xhReq, e);
-                }
-                else {
-                    console.log(xhReq.responseText);
-                }
-            }
-            else {
-                if (s.onError) {
-                    s.onError(xhReq, e);
-                }
-                else {
-                    console.log(xhReq, e);
-                }
-            }
-        }
-
-        xhReq.send(qs);
-    };
-
-    that.loginSuccess = function(key) {
-         spec.token = key.responseText.replace(/"/g, '');
-         console.log(spec.token);
-    };
 
     that.Success = function(resp) {
         console.log(resp);
@@ -78,25 +14,27 @@ checkvist_api = function(spec) {
 
         spec.token = null;
 
-        ajax({
+        new Ajax.Request(spec.baseURL + 'auth/login.json', {
             method: 'POST', 
-            url: 'auth/login.json', 
-            params: {
+            parameters: {
                 username:   spec.username,
-                remote_key: spec.remote_key,
+                remote_key: spec.remote_key
             },
-            success: that.loginSuccess
+            onSuccess: function(key) {
+                spec.token = key.responseText.replace(/"/g, '');
+                console.log(spec.token);
+            }
         });
 
     };
 
 
     var list = function(specL) {
-        var thatL = {};
+        var thatL = specL || {};
         var task = function(specT) {
-            var thatT = {};
+            var thatT = specT || {};
             var comment = function(specC) {
-                var thatC = {};
+                var thatC = specC || {};
 
                 thatC.update = function() {};
                 thatC.delete = function() {};
@@ -127,10 +65,13 @@ checkvist_api = function(spec) {
     };
      
     that.getLists = function(archived) {
-        ajax({
+        new Ajax.Request(spec.baseURL + 'checklists.json', {
             method: 'get', 
-            url: 'checklists.json', 
-            success: that.Success
+            onSuccess: function(transport) {
+                var i, lists = [], json = transport.responseJSON;
+                json.each(function(item) { lists.push( list(item) ); });
+                console.log(lists);
+            }
         });
     };
 
