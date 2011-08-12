@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.10 2011/08/12 19:11:07 andrew Exp $
+// $Id: checkvist_api.js,v 1.11 2011/08/12 19:31:01 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -151,7 +151,6 @@ checkvist_api = function(spec) {
             my.request('checklists/' + thatL.id + '/tasks.json', 
                        options, parameters, callbacks);
         };
-        thatL.importTasks = function(content) {};
 
         thatL.getTask = function(options) {
             options = options || {};
@@ -180,7 +179,10 @@ checkvist_api = function(spec) {
             my.request('checklists/' + thatL.id + '/tasks/' + id + '.json', 
                 options, parameters, callbacks);
         };
+
         thatL.addTask = function(content, parentId, position) {};
+
+        thatL.importTasks = function(content) {};
 
         return thatL;
     };
@@ -231,7 +233,26 @@ checkvist_api = function(spec) {
         my.request('checklists/' + id + '.json', 
             options, parameters, callbacks);
     };
-    that.addList = function(name, public) {};
+
+    that.addList = function(options) {
+        options = options || {};
+        var parameters = [ 'token', 'name', 'public' ];
+        var callbacks  = {
+            onSuccess: function(transport, callback) {
+                var item = list( transport.responseJSON );
+                if (callback) {
+                    callback(item);
+                }
+                else {
+                    console.log(item);
+                }
+            }
+        };
+
+        options.method = 'put';
+        my.request('checklists.json', 
+            options, parameters, callbacks);
+    };
 
     return that;
 }
