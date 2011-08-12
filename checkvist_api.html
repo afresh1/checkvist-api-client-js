@@ -20,9 +20,13 @@
                 onSuccess: function(token) {
                     console.log('token: ' + token);
 
-                    cva.getLists();
-                        //{archived: false, onSuccess: function(lists) { alert('got lists');
-                        //console.log(lists) }});
+                    cva.getLists(
+                        {archived: false, onSuccess: function(lists) { 
+                            //alert('got lists');
+                            console.log(lists);
+                            lists[0].getTasks();
+                        }
+                        });
                 }
             });
 

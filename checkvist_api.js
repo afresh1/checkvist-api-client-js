@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.6 2011/08/12 17:48:01 andrew Exp $
+// $Id: checkvist_api.js,v 1.7 2011/08/12 18:00:19 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -34,8 +34,8 @@ checkvist_api = function(spec) {
 
     that.login = function(options) {
         options = options || {};
-        parameters = [ 'username', 'remote_key' ];
-        callbacks = {
+        var parameters = [ 'username', 'remote_key' ];
+        var callbacks  = {
             onSuccess: function(transport, callback) {
                 that.token = transport.responseText.replace(/"/g, '');
 
@@ -45,7 +45,6 @@ checkvist_api = function(spec) {
                 else {
                     console.log(that.token);
                 }
-
             }
         };
 
@@ -81,7 +80,29 @@ checkvist_api = function(spec) {
         thatL.update = function(name, public) {};
         thatL.delete = function() {};
 
-        thatL.getTasks = function(withNotes) {};
+        thatL.getTasks = function(options) {
+            console.log(thatL);
+            options = options || {};
+            var parameters = [ 'token', 'with_notes' ];
+            var callbacks  = {
+                onSuccess: function(transport, callback) {
+                    var items = [];
+                    transport.responseJSON.each(function(item) { 
+                        items.push( task(item) ); 
+                    });
+                    if (callback) {
+                        callback(items);
+                    }
+                    else {
+                        console.log(items);
+                    }
+                }
+            };
+
+            options.method = 'get';
+            my.request('checklists/' + thatL.id + '/tasks.json', 
+                       options, parameters, callbacks);
+        };
         thatL.importTasks = function(content) {};
 
         thatL.getTask = function(taskId, withNotes) {};
@@ -92,25 +113,23 @@ checkvist_api = function(spec) {
      
     that.getLists = function(options) {
         options = options || {};
-        options.method = 'get';
-
         var parameters = [ 'token', 'archived' ];
-
-        var callbacks = {
+        var callbacks  = {
             onSuccess: function(transport, callback) {
-                var lists = [];
+                var items = [];
                 transport.responseJSON.each(function(item) { 
-                    lists.push( list(item) ); 
+                    items.push( list(item) ); 
                 });
                 if (callback) {
-                    callback(lists);
+                    callback(items);
                 }
                 else {
-                    console.log(lists);
+                    console.log(items);
                 }
             }
         };
 
+        options.method = 'get';
         my.request('checklists.json', options, parameters, callbacks);
     };
 
