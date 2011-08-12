@@ -1,0 +1,20 @@
+<html><head><title>Checkvist Javascript API Access Test</title>
+        <script type="text/javascript" src="checkvist_api.js"></script>
+  	<script type="text/javascript" src="http://www.google.com/jsapi"></script>
+  	<script type="text/javascript">google.load("prototype", "1.7.0.0");</script>
+
+    </head>
+    <body>
+        <script type="text/javascript">
+
+	    var cb = function() {
+                console.log(arguments);
+            }
+            cva = checkvist_api({});
+            cva.login('andrew+checkvist@afresh1.com',
+                    'GpVkMIwqoDsztUYi0YecZgy56vdgJ61s4fKK7gZ3');
+
+            var lists = cva.getLists();
+        </script>
+    </body>
+</html>
