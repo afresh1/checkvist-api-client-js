@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.9 2011/08/12 18:48:37 andrew Exp $
+// $Id: checkvist_api.js,v 1.10 2011/08/12 19:11:07 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -69,7 +69,34 @@ checkvist_api = function(spec) {
 
             thatT.update = function() {};
             thatT.delete = function() {};
-            thatT.setAction = function() {};
+
+            thatT._action = function(action, options) {
+                options = options || {};
+                var parameters = [ 'token' ];
+                var callbacks  = {
+                    onSuccess: function(transport, callback) {
+                        var items = [];
+                        transport.responseJSON.each(function(item) { 
+                            items.push( task(item) ); 
+                        });
+                        if (callback) {
+                            callback(items);
+                        }
+                        else {
+                            console.log(items);
+                        }
+                    }
+                };
+
+                options.method = 'post';
+                my.request('checklists/' + thatL.id + '/tasks/' 
+                        + thatT.id + '/' + action + '.json', 
+                        options, parameters, callbacks);
+            };
+
+            thatT.close      = function(o) { thatT._action('close',      o) };
+            thatT.invalidate = function(o) { thatT._action('invalidate', o) };
+            thatT.reopen     = function(o) { thatT._action('reopen',     o) };
 
             thatT.getComments = function(options) {
                 options = options || {};
@@ -131,12 +158,15 @@ checkvist_api = function(spec) {
             var parameters = [ 'token', 'with_notes' ];
             var callbacks  = {
                 onSuccess: function(transport, callback) {
-                    var item = list( transport.responseJSON );
+                    var items = [];
+                    transport.responseJSON.each(function(item) { 
+                        items.push( task(item) ); 
+                    });
                     if (callback) {
-                        callback(item);
+                        callback(items);
                     }
                     else {
-                        console.log(item);
+                        console.log(items);
                     }
                 }
             };
