@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.7 2011/08/12 18:00:19 andrew Exp $
+// $Id: checkvist_api.js,v 1.8 2011/08/12 18:22:22 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -71,7 +71,29 @@ checkvist_api = function(spec) {
             thatT.delete = function() {};
             thatT.setAction = function() {};
 
-            thatT.getComments = function(listId,taskId) {};
+            thatT.getComments = function(options) {
+                options = options || {};
+                var parameters = [ 'token' ];
+                var callbacks  = {
+                    onSuccess: function(transport, callback) {
+                        var items = [];
+                        transport.responseJSON.each(function(item) { 
+                            items.push( comment(item) ); 
+                        });
+                        if (callback) {
+                            callback(items);
+                        }
+                        else {
+                            console.log(items);
+                        }
+                    }
+                };
+
+                options.method = 'get';
+                my.request('checklists/' + thatL.id + '/tasks/' 
+                        + thatT.id + '/comments.json', 
+                        options, parameters, callbacks);
+            };
             thatT.addComment = function(listId,taskId) {};
 
             return thatT;
@@ -81,7 +103,6 @@ checkvist_api = function(spec) {
         thatL.delete = function() {};
 
         thatL.getTasks = function(options) {
-            console.log(thatL);
             options = options || {};
             var parameters = [ 'token', 'with_notes' ];
             var callbacks  = {

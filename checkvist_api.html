@@ -23,8 +23,17 @@
                     cva.getLists(
                         {archived: false, onSuccess: function(lists) { 
                             //alert('got lists');
-                            console.log(lists);
-                            lists[0].getTasks();
+                            console.log('lists', lists);
+                            lists[0].getTasks({
+                                onSuccess: function(tasks) {
+                                    console.log('tasks', tasks);
+                                    tasks[0].getComments({
+                                        onSuccess: function(comments) {
+                                            console.log('comments', comments);
+                                        }
+                                    });
+                                }
+                            });
                         }
                         });
                 }
