@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.8 2011/08/12 18:22:22 andrew Exp $
+// $Id: checkvist_api.js,v 1.9 2011/08/12 18:48:37 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -126,7 +126,30 @@ checkvist_api = function(spec) {
         };
         thatL.importTasks = function(content) {};
 
-        thatL.getTask = function(taskId, withNotes) {};
+        thatL.getTask = function(options) {
+            options = options || {};
+            var parameters = [ 'token', 'with_notes' ];
+            var callbacks  = {
+                onSuccess: function(transport, callback) {
+                    var item = list( transport.responseJSON );
+                    if (callback) {
+                        callback(item);
+                    }
+                    else {
+                        console.log(item);
+                    }
+                }
+            };
+
+            var id = options.id;
+            delete options.id;
+
+            console.log('getTask', id);
+
+            options.method = 'get';
+            my.request('checklists/' + thatL.id + '/tasks/' + id + '.json', 
+                options, parameters, callbacks);
+        };
         thatL.addTask = function(content, parentId, position) {};
 
         return thatL;
@@ -154,7 +177,30 @@ checkvist_api = function(spec) {
         my.request('checklists.json', options, parameters, callbacks);
     };
 
-    that.getList = function(listId) {};
+    that.getList = function(options) {
+        options = options || {};
+        var parameters = [ 'token' ];
+        var callbacks  = {
+            onSuccess: function(transport, callback) {
+                var item = list( transport.responseJSON );
+                if (callback) {
+                    callback(item);
+                }
+                else {
+                    console.log(item);
+                }
+            }
+        };
+
+        var id = options.id;
+        delete options.id;
+
+        console.log('getList', id);
+
+        options.method = 'get';
+        my.request('checklists/' + id + '.json', 
+            options, parameters, callbacks);
+    };
     that.addList = function(name, public) {};
 
     return that;

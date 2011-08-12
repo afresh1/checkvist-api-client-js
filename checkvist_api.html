@@ -35,7 +35,14 @@
                                 }
                             });
                         }
-                        });
+                    });
+
+                    cva.getList({ id: 59807, onSuccess: function(list) {
+                            console.log('list', list);
+                            list.getTask({ id: 2383079, onSuccess: function(task) {
+                                console.log('task', task);
+                            }});
+                    }});
                 }
             });
 
