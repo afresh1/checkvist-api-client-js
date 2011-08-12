@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.5 2011/08/12 17:47:20 andrew Exp $
+// $Id: checkvist_api.js,v 1.6 2011/08/12 17:48:01 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -33,6 +33,7 @@ checkvist_api = function(spec) {
     };
 
     that.login = function(options) {
+        options = options || {};
         parameters = [ 'username', 'remote_key' ];
         callbacks = {
             onSuccess: function(transport, callback) {
