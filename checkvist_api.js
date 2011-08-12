@@ -1,31 +1,41 @@
-// $Id: checkvist_api.js,v 1.3 2011/08/12 03:01:27 andrew Exp $
+// $Id: checkvist_api.js,v 1.4 2011/08/12 16:44:57 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
-
+    spec = spec || {};
     spec.baseURL = spec.baseURL || 'https://checkvist.com/';
 
-    that.Success = function(resp) {
-        console.log(resp);
-    };
+    that.login = function(options) {
+        options = options || {};
 
-    that.login = function(user,key) {
-        spec.username    = user || spec.username;
-        spec.remote_key  = key  || spec.remote_key;
+        var onSuccess  = options.onSuccess;
+        options.method = 'post';
 
-        spec.token = null;
+        options.parameters = options.parameters || {};
 
-        new Ajax.Request(spec.baseURL + 'auth/login.json', {
-            method: 'POST', 
-            parameters: {
-                username:   spec.username,
-                remote_key: spec.remote_key
-            },
-            onSuccess: function(key) {
-                spec.token = key.responseText.replace(/"/g, '');
-                console.log(spec.token);
+        spec.username = options.username || options.parameters.username 
+            || spec.username;
+        delete options.username;
+        options.parameters.username = spec.username;
+
+        spec.remote_key = options.remote_key || options.parameters.remote_key 
+            || spec.remote_key;
+        delete options.remote_key;
+        options.parameters.remote_key = spec.remote_key;
+
+        options.onSuccess = function(transport) {
+            that.token = transport.responseText.replace(/"/g, '');
+
+            if (onSuccess) {
+                onSuccess(that.token);
             }
-        });
+            else {
+                console.log(that.token);
+            }
 
+        };
+
+        delete that.token;
+        new Ajax.Request(spec.baseURL + 'auth/login.json', options);
     };
 
 
@@ -64,15 +74,33 @@ checkvist_api = function(spec) {
         return thatL;
     };
      
-    that.getLists = function(archived) {
-        new Ajax.Request(spec.baseURL + 'checklists.json', {
-            method: 'get', 
-            onSuccess: function(transport) {
-                var i, lists = [], json = transport.responseJSON;
-                json.each(function(item) { lists.push( list(item) ); });
+    that.getLists = function(options) {
+        options = options || {};
+
+        var onSuccess = options.onSuccess;
+        options.method = 'get';
+
+        options.parameters = options.parameters || {};
+        options.parameters.token = options.parameters.token || that.token;
+
+        options.parameters.archived = options.archived 
+                || options.parameters.archived;
+        delete options.archived;
+
+        options.onSuccess = function(transport) {
+            var lists = [];
+            transport.responseJSON.each(function(item) { 
+                lists.push( list(item) ); 
+            });
+            if (onSuccess) {
+                onSuccess(lists);
+            }
+            else {
                 console.log(lists);
             }
-        });
+        }
+
+        new Ajax.Request(spec.baseURL + 'checklists.json', options);
     };
 
     that.getList = function(listId) {};

@@ -1,7 +1,10 @@
 <html><head><title>Checkvist Javascript API Access Test</title>
-        <script type="text/javascript" src="checkvist_api.js"></script>
+    <!-- 
   	<script type="text/javascript" src="http://www.google.com/jsapi"></script>
   	<script type="text/javascript">google.load("prototype", "1.7.0.0");</script>
+    -->
+  	<script type="text/javascript" src="prototype.js"></script>
+    <script type="text/javascript" src="checkvist_api.js"></script>
 
     </head>
     <body>
@@ -10,11 +13,19 @@
 	    var cb = function() {
                 console.log(arguments);
             }
-            cva = checkvist_api({});
-            cva.login('andrew+checkvist@afresh1.com',
-                    'GpVkMIwqoDsztUYi0YecZgy56vdgJ61s4fKK7gZ3');
+            cva = checkvist_api();
+            cva.login({
+                username: 'andrew+checkvist@afresh1.com',
+                remote_key: 'GpVkMIwqoDsztUYi0YecZgy56vdgJ61s4fKK7gZ3',
+                onSuccess: function(token) {
+                    console.log('token: ' + token);
 
-            var lists = cva.getLists();
+                    cva.getLists();
+                        //{archived: true, onSuccess: function(lists) { alert('got lists');
+                        //console.log(lists) }});
+                }
+            });
+
         </script>
     </body>
 </html>
