@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.11 2011/08/12 19:31:01 andrew Exp $
+// $Id: checkvist_api.js,v 1.12 2011/08/12 19:36:24 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -6,19 +6,19 @@ checkvist_api = function(spec) {
     spec.baseURL = spec.baseURL || 'https://checkvist.com/';
 
     my.request = function(url, options, p, cb) {
-        var callback;
+        var i, callback;
         options = options || {};
         options.parameters = options.parameters || {};
         p = p || [];
         cb = cb || {};
 
-        p.each( function(item) {
-            options.parameters[item] = options[item]
-                || options.parameters[item]
-                || spec[item]
-                || that[item];
-            delete options[item];
-        });
+        for (i = 0; i < p.length; i++) {
+            options.parameters[ p[i] ] = options[ p[i] ]
+                || options.parameters[ p[i] ]
+                || spec[ p[i] ]
+                || that[ p[i] ];
+            delete options[ p[i] ];
+        };
 
         for (item in cb) {
             if (cb.hasOwnProperty(item)) {
@@ -75,10 +75,10 @@ checkvist_api = function(spec) {
                 var parameters = [ 'token' ];
                 var callbacks  = {
                     onSuccess: function(transport, callback) {
-                        var items = [];
-                        transport.responseJSON.each(function(item) { 
-                            items.push( task(item) ); 
-                        });
+                        var i, items = [], j = transport.responseJSON;
+                        for (i = 0; i < j.length; i++) {
+                            items.push( task(j[i]) ); 
+                        };
                         if (callback) {
                             callback(items);
                         }
@@ -103,10 +103,10 @@ checkvist_api = function(spec) {
                 var parameters = [ 'token' ];
                 var callbacks  = {
                     onSuccess: function(transport, callback) {
-                        var items = [];
-                        transport.responseJSON.each(function(item) { 
-                            items.push( comment(item) ); 
-                        });
+                        var i, items = [], j = transport.responseJSON;
+                        for (i = 0; i < j.length; i++) {
+                            items.push( comment(j[i]) ); 
+                        };
                         if (callback) {
                             callback(items);
                         }
@@ -134,10 +134,10 @@ checkvist_api = function(spec) {
             var parameters = [ 'token', 'with_notes' ];
             var callbacks  = {
                 onSuccess: function(transport, callback) {
-                    var items = [];
-                    transport.responseJSON.each(function(item) { 
-                        items.push( task(item) ); 
-                    });
+                    var i, items = [], j = transport.responseJSON;
+                    for (i = 0; i < j.length; i++) {
+                        items.push( task(j[i]) ); 
+                    };
                     if (callback) {
                         callback(items);
                     }
@@ -157,10 +157,10 @@ checkvist_api = function(spec) {
             var parameters = [ 'token', 'with_notes' ];
             var callbacks  = {
                 onSuccess: function(transport, callback) {
-                    var items = [];
-                    transport.responseJSON.each(function(item) { 
-                        items.push( task(item) ); 
-                    });
+                    var i, items = [], j = transport.responseJSON;
+                    for (i = 0; i < j.length; i++) {
+                        items.push( task(j[i]) ); 
+                    };
                     if (callback) {
                         callback(items);
                     }
@@ -192,10 +192,10 @@ checkvist_api = function(spec) {
         var parameters = [ 'token', 'archived' ];
         var callbacks  = {
             onSuccess: function(transport, callback) {
-                var items = [];
-                transport.responseJSON.each(function(item) { 
-                    items.push( list(item) ); 
-                });
+                var i, items = [], j = transport.responseJSON;
+                for (i = 0; i < j.length; i++) {
+                    items.push( list(j[i]) ); 
+                };
                 if (callback) {
                     callback(items);
                 }
