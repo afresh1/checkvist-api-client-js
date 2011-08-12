@@ -1,41 +1,56 @@
-// $Id: checkvist_api.js,v 1.4 2011/08/12 16:44:57 andrew Exp $
+// $Id: checkvist_api.js,v 1.5 2011/08/12 17:47:20 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
+    var my = {};
     spec = spec || {};
     spec.baseURL = spec.baseURL || 'https://checkvist.com/';
 
-    that.login = function(options) {
+    my.request = function(url, options, p, cb) {
+        var callback;
         options = options || {};
-
-        var onSuccess  = options.onSuccess;
-        options.method = 'post';
-
         options.parameters = options.parameters || {};
+        p = p || [];
+        cb = cb || {};
 
-        spec.username = options.username || options.parameters.username 
-            || spec.username;
-        delete options.username;
-        options.parameters.username = spec.username;
+        p.each( function(item) {
+            options.parameters[item] = options[item]
+                || options.parameters[item]
+                || spec[item]
+                || that[item];
+            delete options[item];
+        });
 
-        spec.remote_key = options.remote_key || options.parameters.remote_key 
-            || spec.remote_key;
-        delete options.remote_key;
-        options.parameters.remote_key = spec.remote_key;
-
-        options.onSuccess = function(transport) {
-            that.token = transport.responseText.replace(/"/g, '');
-
-            if (onSuccess) {
-                onSuccess(that.token);
+        for (item in cb) {
+            if (cb.hasOwnProperty(item)) {
+                callback = options[item];
+                options[item] = function(transport) {
+                    cb[item](transport, callback);
+                };
             }
-            else {
-                console.log(that.token);
-            }
+        }
 
+        new Ajax.Request(spec.baseURL + url, options);
+    };
+
+    that.login = function(options) {
+        parameters = [ 'username', 'remote_key' ];
+        callbacks = {
+            onSuccess: function(transport, callback) {
+                that.token = transport.responseText.replace(/"/g, '');
+
+                if (callback) {
+                    callback(that.token);
+                }
+                else {
+                    console.log(that.token);
+                }
+
+            }
         };
 
         delete that.token;
-        new Ajax.Request(spec.baseURL + 'auth/login.json', options);
+        options.method = 'post';
+        my.request('auth/login.json', options, parameters, callbacks);
     };
 
 
@@ -76,31 +91,26 @@ checkvist_api = function(spec) {
      
     that.getLists = function(options) {
         options = options || {};
-
-        var onSuccess = options.onSuccess;
         options.method = 'get';
 
-        options.parameters = options.parameters || {};
-        options.parameters.token = options.parameters.token || that.token;
+        var parameters = [ 'token', 'archived' ];
 
-        options.parameters.archived = options.archived 
-                || options.parameters.archived;
-        delete options.archived;
-
-        options.onSuccess = function(transport) {
-            var lists = [];
-            transport.responseJSON.each(function(item) { 
-                lists.push( list(item) ); 
-            });
-            if (onSuccess) {
-                onSuccess(lists);
+        var callbacks = {
+            onSuccess: function(transport, callback) {
+                var lists = [];
+                transport.responseJSON.each(function(item) { 
+                    lists.push( list(item) ); 
+                });
+                if (callback) {
+                    callback(lists);
+                }
+                else {
+                    console.log(lists);
+                }
             }
-            else {
-                console.log(lists);
-            }
-        }
+        };
 
-        new Ajax.Request(spec.baseURL + 'checklists.json', options);
+        my.request('checklists.json', options, parameters, callbacks);
     };
 
     that.getList = function(listId) {};
