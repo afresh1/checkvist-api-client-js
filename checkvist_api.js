@@ -1,35 +1,105 @@
-// $Id: checkvist_api.js,v 1.12 2011/08/12 19:36:24 andrew Exp $
+// $Id: checkvist_api.js,v 1.13 2011/08/13 03:45:52 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
     spec = spec || {};
-    spec.baseURL = spec.baseURL || 'https://checkvist.com/';
+    spec.baseURL = spec.baseURL || 'http://checkvist.com/';
 
-    my.request = function(url, options, p, cb) {
-        var i, callback;
+    my.serialize = function(obj) {
+        var str = [];
+        for(var p in obj) {
+            if ( obj[p] !== undefined ) {
+                str.push(p + "=" + encodeURIComponent(obj[p]));
+            }
+        }
+        return str.join("&");
+    };
+
+    my.ajax = function(url, options) {
         options = options || {};
         options.parameters = options.parameters || {};
+
+        var qs = my.serialize(options.parameters);
+
+        var method = options.method.toUpperCase() || 'POST';
+
+        if (method === 'GET' || method === 'DELETE') {
+            url += '?' + qs;
+        }
+
+        var xhReq = new XMLHttpRequest();
+        xhReq.open(method, url, true);
+        if (method === 'POST' || method === 'PUT') {
+            xhReq.setRequestHeader("Content-type", 
+                                   "application/x-www-form-urlencoded");
+            if (qs) {
+                xhReq.setRequestHeader("Content-length", qs.length);
+            }
+        }
+        xhReq.setRequestHeader("Connection", "close");
+
+        xhReq.onreadystatechange = function(e) {
+            if (xhReq.readyState !== 4) { return }
+
+            if (xhReq.status === 200) {
+                if (options.onSuccess) {
+                    xhReq.responseJSON = JSON.parse(xhReq.responseText);
+                    options.onSuccess(xhReq, e);
+                }
+                else {
+                    console.log(xhReq);
+                }
+            }
+            else {
+                if (options.onError) {
+                    options.onError(xhReq, e);
+                }
+                else {
+                    console.log(xhReq, e);
+                }
+            }
+        }
+
+        xhReq.send(qs);
+    };
+
+    my.request = function(url, o, p, cb) {
+        var i, key, callback;
+        o = o || {};
+        o.parameters = o.parameters || {};
         p = p || [];
         cb = cb || {};
 
+        console.log(this);
+
         for (i = 0; i < p.length; i++) {
-            options.parameters[ p[i] ] = options[ p[i] ]
-                || options.parameters[ p[i] ]
-                || spec[ p[i] ]
-                || that[ p[i] ];
-            delete options[ p[i] ];
+            key = o._parameter_prefix 
+                ? o._parameter_prefix + '[' + p[i] + ']' 
+                : p[i];
+            o.parameters[ key ] 
+                = o[ p[i] ]         !== undefined ? o[ p[i] ]
+                : o.parameters[key] !== undefined ? o.parameters[key]
+                : spec[ key ]       !== undefined ? spec[ key ]
+                : this[ p[i] ]      !== undefined ? this[ p[i] ]
+                : that[ key ]       !== undefined ? that[ key ]
+                :                                   undefined;
+            delete o[ p[i] ];
         };
+
+        if (that.token) {
+            o.parameters.token = that.token;
+        }
 
         for (item in cb) {
             if (cb.hasOwnProperty(item)) {
-                callback = options[item];
-                options[item] = function(transport) {
+                callback = o[item];
+                o[item] = function(transport) {
                     cb[item](transport, callback);
                 };
             }
         }
 
-        new Ajax.Request(spec.baseURL + url, options);
+        my.ajax(spec.baseURL + url, o);
     };
 
     that.login = function(options) {
@@ -48,7 +118,6 @@ checkvist_api = function(spec) {
             }
         };
 
-        delete that.token;
         options.method = 'post';
         my.request('auth/login.json', options, parameters, callbacks);
     };
@@ -61,18 +130,119 @@ checkvist_api = function(spec) {
             var comment = function(specC) {
                 var thatC = specC || {};
 
-                thatC.update = function() {};
-                thatC.delete = function() {};
+                thatC.update = function(options) {
+                    var i;
+                    options = options || {};
+                    options.parameters = options.parameters || {};
+                    options._parameter_prefix = 'comment';
+                    var parameters = [ 'comment' ];
+                    var callbacks  = {
+                        onSuccess: function(transport, callback) {
+                            var item = comment( transport.responseJSON );
+                            if (callback) {
+                                callback(item);
+                            }
+                            else {
+                                console.log(item);
+                            }
+                        }
+                    };
+
+                    for (i = 0; i < parameters.length; i++) {
+                        options[ parameters[i] ] 
+                            = options[ parameters[i] ] 
+                            || this[ parameters[i] ];
+                    }
+
+                    options.method = 'put';
+                    my.request('checklists/'  + thatL.id 
+                               + '/tasks/'    + thatT.id 
+                               + '/comments/' + thatC.id + '.json', 
+                            options, parameters, callbacks);
+                };
+
+
+                // XXX Doesn't work, server error 500
+                thatC.delete = function(options) {
+                    options = options || {};
+                    var parameters = [];
+                    var callbacks  = {
+                        onSuccess: function(transport, callback) {
+                            var item = comment( transport.responseJSON );
+                            if (callback) {
+                                callback(item);
+                            }
+                            else {
+                                console.log(item);
+                            }
+                        }
+                    };
+
+                    options.method = 'delete';
+                    my.request('checklists/'  + thatL.id 
+                               + '/tasks/'    + thatT.id 
+                               + '/comments/' + thatC.id + '.json', 
+                            options, parameters, callbacks);
+                };
 
                 return thatC;
             };
 
-            thatT.update = function() {};
-            thatT.delete = function() {};
+            thatT.update = function(options) {
+                var i;
+                options = options || {};
+                options.parameters = options.parameters || {};
+                options._parameter_prefix = 'task';
+                var parameters = [ 'content', 'parent_id', 'position' ];
+                var callbacks  = {
+                    onSuccess: function(transport, callback) {
+                        var item = task( transport.responseJSON );
+                        if (callback) {
+                            callback(item);
+                        }
+                        else {
+                            console.log(item);
+                        }
+                    }
+                };
+
+                for (i = 0; i < parameters.length; i++) {
+                    options[ parameters[i] ] 
+                        = options[ parameters[i] ] 
+                        || this[ parameters[i] ];
+                }
+
+                options.method = 'put';
+                my.request('checklists/' + thatL.id + '/tasks/' 
+                        + thatT.id + '.json', 
+                        options, parameters, callbacks);
+            };
+
+            // XXX Doesn't work, server error 500
+            thatT.delete = function(options) {
+                options = options || {};
+                var parameters = [];
+                var callbacks  = {
+                    onSuccess: function(transport, callback) {
+                        var item = task( transport.responseJSON );
+                        if (callback) {
+                            callback(item);
+                        }
+                        else {
+                            console.log(item);
+                        }
+                    }
+                };
+
+                options.method = 'delete';
+                my.request('checklists/' + thatL.id 
+                           + '/tasks/' + thatT.id + '.json', 
+                           options, parameters, callbacks);
+            };
 
             thatT._action = function(action, options) {
                 options = options || {};
-                var parameters = [ 'token' ];
+                var parameters = [];
                 var callbacks  = {
                     onSuccess: function(transport, callback) {
                         var i, items = [], j = transport.responseJSON;
@@ -100,7 +270,7 @@ checkvist_api = function(spec) {
 
             thatT.getComments = function(options) {
                 options = options || {};
-                var parameters = [ 'token' ];
+                var parameters = [];
                 var callbacks  = {
                     onSuccess: function(transport, callback) {
                         var i, items = [], j = transport.responseJSON;
@@ -121,17 +291,87 @@ checkvist_api = function(spec) {
                         + thatT.id + '/comments.json', 
                         options, parameters, callbacks);
             };
-            thatT.addComment = function(listId,taskId) {};
+
+            thatT.addComment = function(options) {
+                options = options || {};
+                options._parameter_prefix = 'comment';
+                var parameters = [ 'comment' ];
+                var callbacks  = {
+                    onSuccess: function(transport, callback) {
+                        var item = comment( transport.responseJSON );
+                        if (callback) {
+                            callback(item);
+                        }
+                        else {
+                            console.log(item);
+                        }
+                    }
+                };
+
+                options.method = 'post';
+                my.request('checklists/' + thatL.id 
+                           + '/tasks/' + thatT.id + '/comments.json',
+                        options, parameters, callbacks);
+            };
 
             return thatT;
         };
 
-        thatL.update = function(name, public) {};
-        thatL.delete = function() {};
+        thatL.update = function(options) {
+            var i;
+            options = options || {};
+            options.parameters = options.parameters || {};
+            options._parameter_prefix = 'checklist';
+            var parameters = [ 'name', 'public' ];
+            var callbacks  = {
+                onSuccess: function(transport, callback) {
+                    var item = list( transport.responseJSON );
+                    if (callback) {
+                        callback(item);
+                    }
+                    else {
+                        console.log(item);
+                    }
+                }
+            };
+
+            for (i = 0; i < parameters.length; i++) {
+                options[ parameters[i] ] 
+                    = options[ parameters[i] ] 
+                    || this[ parameters[i] ];
+            }
+
+            options.public = options.public || 0;
+
+            options.method = 'put';
+            my.request('checklists/' + thatL.id + '.json', 
+                    options, parameters, callbacks);
+        };
+
+        // XXX Doesn't work, server error 500
+        thatL.delete = function(options) {
+            options = options || {};
+            var parameters = [];
+            var callbacks  = {
+                onSuccess: function(transport, callback) {
+                    var item = list( transport.responseJSON );
+                    if (callback) {
+                        callback(item);
+                    }
+                    else {
+                        console.log(item);
+                    }
+                }
+            };
+
+            options.method = 'delete';
+            my.request('checklists/' + thatL.id + '.json', 
+                       options, parameters, callbacks);
+        };
 
         thatL.getTasks = function(options) {
             options = options || {};
-            var parameters = [ 'token', 'with_notes' ];
+            var parameters = [ 'with_notes' ];
             var callbacks  = {
                 onSuccess: function(transport, callback) {
                     var i, items = [], j = transport.responseJSON;
@@ -154,7 +394,7 @@ checkvist_api = function(spec) {
 
         thatL.getTask = function(options) {
             options = options || {};
-            var parameters = [ 'token', 'with_notes' ];
+            var parameters = [ 'with_notes' ];
             var callbacks  = {
                 onSuccess: function(transport, callback) {
                     var i, items = [], j = transport.responseJSON;
@@ -173,23 +413,58 @@ checkvist_api = function(spec) {
             var id = options.id;
             delete options.id;
 
-            console.log('getTask', id);
-
             options.method = 'get';
             my.request('checklists/' + thatL.id + '/tasks/' + id + '.json', 
                 options, parameters, callbacks);
         };
 
-        thatL.addTask = function(content, parentId, position) {};
+        thatL.addTask = function(options) {
+            options = options || {};
+            options._parameter_prefix = 'task';
+            var parameters = [ 'content', 'parent_id', 'position' ];
+            var callbacks  = {
+                onSuccess: function(transport, callback) {
+                    var item = task( transport.responseJSON );
+                    if (callback) {
+                        callback(item);
+                    }
+                    else {
+                        console.log(item);
+                    }
+                }
+            };
 
-        thatL.importTasks = function(content) {};
+            options.method = 'post';
+            my.request('checklists/' + thatL.id + '/tasks.json', 
+                       options, parameters, callbacks);
+        };
+
+        thatL.importTasks = function(options) {
+            options = options || {};
+            var parameters = [ 'import_content' ];
+            var callbacks  = {
+                onSuccess: function(transport, callback) {
+                    var item = task( transport.responseJSON );
+                    if (callback) {
+                        callback(item);
+                    }
+                    else {
+                        console.log(item);
+                    }
+                }
+            };
+
+            options.method = 'post';
+            my.request('checklists/' + thatL.id + '/import.json', 
+                       options, parameters, callbacks);
+        };
 
         return thatL;
     };
      
     that.getLists = function(options) {
         options = options || {};
-        var parameters = [ 'token', 'archived' ];
+        var parameters = [ 'archived' ];
         var callbacks  = {
             onSuccess: function(transport, callback) {
                 var i, items = [], j = transport.responseJSON;
@@ -211,7 +486,7 @@ checkvist_api = function(spec) {
 
     that.getList = function(options) {
         options = options || {};
-        var parameters = [ 'token' ];
+        var parameters = [];
         var callbacks  = {
             onSuccess: function(transport, callback) {
                 var item = list( transport.responseJSON );
@@ -227,8 +502,6 @@ checkvist_api = function(spec) {
         var id = options.id;
         delete options.id;
 
-        console.log('getList', id);
-
         options.method = 'get';
         my.request('checklists/' + id + '.json', 
             options, parameters, callbacks);
@@ -236,7 +509,8 @@ checkvist_api = function(spec) {
 
     that.addList = function(options) {
         options = options || {};
-        var parameters = [ 'token', 'name', 'public' ];
+        options._parameter_prefix = 'checklist';
+        var parameters = [ 'name', 'public' ];
         var callbacks  = {
             onSuccess: function(transport, callback) {
                 var item = list( transport.responseJSON );
@@ -249,9 +523,8 @@ checkvist_api = function(spec) {
             }
         };
 
-        options.method = 'put';
-        my.request('checklists.json', 
-            options, parameters, callbacks);
+        options.method = 'post';
+        my.request('checklists.json', options, parameters, callbacks);
     };
 
     return that;

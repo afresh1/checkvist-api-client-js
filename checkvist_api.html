@@ -2,8 +2,8 @@
     <!-- 
   	<script type="text/javascript" src="http://www.google.com/jsapi"></script>
   	<script type="text/javascript">google.load("prototype", "1.7.0.0");</script>
-    -->
   	<script type="text/javascript" src="prototype.js"></script>
+    -->
     <script type="text/javascript" src="checkvist_api.js"></script>
 
     </head>
@@ -20,6 +20,7 @@
                 onSuccess: function(token) {
                     console.log('token: ' + token);
 
+                    /*
                     cva.getLists(
                         {archived: false, onSuccess: function(lists) { 
                             //alert('got lists');
@@ -36,24 +37,48 @@
                             });
                         }
                     });
+                    */
 
+                    /*
                     cva.getList({ id: 59807, onSuccess: function(list) {
                             console.log('list', list);
-                            list.getTask({ id: 3348856, onSuccess: function(task) {
-                                console.log('task', task);
-                                task[0].close();
+                            list.getTask({ id: 3348856, onSuccess: function(tasks) {
+                                console.log('tasks', tasks);
+                                //tasks[0].close();
+                                tasks[0].update({
+                                    'content': tasks[0].content + 'X'
+                                });
                             }});
                     }});
+                    */
                     
-                    /*
-                    cva.addList({ name: 'test list', onSuccess: function(list) {
+                    cva.addList({ name: 'test list', public: 0, onSuccess: function(list) {
                             console.log('list', list);
+                            list.update({ name: 'list test' });
+                            list.addTask({ content: 'Test Task', onSuccess:
+                                function(task) { 
+                                    console.log(task);
+                                    task.update({ content: 'Task Test' });
+                                    task.invalidate();
+                                    task.addComment({ comment: 'Test Comment',
+                                        onSuccess: function(comment) {
+                                            comment.update({ comment: 'Comment Test' });
+                                        }
+                                    });
+                                } 
+                            });
+                            
+                            list.importTasks({ import_content: "This is a test\n"
++ " but I am not sure\n"
++ "  how to\n"
++ "  import\n"
++ "   multiline data\n"});
                             //list.getTask({ id: 3348856, onSuccess: function(task) {
                                 //console.log('task', task);
                                 //task[0].close();
                             //}});
+                            //setTimeout(list.delete, 3000);
                     }});
-                    */
                 }
             });
 
