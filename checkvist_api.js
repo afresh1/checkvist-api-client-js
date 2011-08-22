@@ -1,4 +1,4 @@
-// $Id: checkvist_api.js,v 1.13 2011/08/13 03:45:52 andrew Exp $
+// $Id: checkvist_api.js,v 1.14 2011/08/22 06:34:15 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
@@ -19,9 +19,14 @@ checkvist_api = function(spec) {
         options = options || {};
         options.parameters = options.parameters || {};
 
-        var qs = my.serialize(options.parameters);
-
         var method = options.method.toUpperCase() || 'POST';
+
+        if (method === 'PUT' || method === 'DELETE') {
+            options.parameters._method = method;
+            method = 'POST';
+        }
+
+        var qs = my.serialize(options.parameters);
 
         if (method === 'GET' || method === 'DELETE') {
             url += '?' + qs;
@@ -40,6 +45,7 @@ checkvist_api = function(spec) {
 
         xhReq.onreadystatechange = function(e) {
             if (xhReq.readyState !== 4) { return }
+            clearTimeout(xmlHttpTimeout);
 
             if (xhReq.status === 200) {
                 if (options.onSuccess) {
@@ -61,7 +67,14 @@ checkvist_api = function(spec) {
         }
 
         xhReq.send(qs);
+
+        my.ajaxTimeout = function(){
+            xhReq.abort();
+            alert("Request timed out");
+        };
+        var xmlHttpTimeout=setTimeout(my.ajaxTimeout,5000);
     };
+
 
     my.request = function(url, o, p, cb) {
         var i, key, callback;
@@ -69,8 +82,6 @@ checkvist_api = function(spec) {
         o.parameters = o.parameters || {};
         p = p || [];
         cb = cb || {};
-
-        console.log(this);
 
         for (i = 0; i < p.length; i++) {
             key = o._parameter_prefix 
@@ -245,7 +256,7 @@ checkvist_api = function(spec) {
                 var parameters = [];
                 var callbacks  = {
                     onSuccess: function(transport, callback) {
-                        var i, items = [], j = transport.responseJSON;
+                        var i, j = transport.responseJSON, items = [];
                         for (i = 0; i < j.length; i++) {
                             items.push( task(j[i]) ); 
                         };
@@ -257,6 +268,14 @@ checkvist_api = function(spec) {
                         }
                     }
                 };
+
+                if (action === 'reopen') {
+                    // XXX This is because reopen could change parents
+                    // XXX but it returns children instead.
+                    callbacks.onSuccess = function(transport, callback) {
+                        thatL.getTask({id: thatT.id, onSuccess: callback});
+                    };
+                }
 
                 options.method = 'post';
                 my.request('checklists/' + thatL.id + '/tasks/' 
@@ -314,6 +333,7 @@ checkvist_api = function(spec) {
                         options, parameters, callbacks);
             };
 
+            thatT.refresh = thatL.getTasks;
             return thatT;
         };
 
