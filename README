@@ -1,0 +1,19 @@
+This is a WIP for a Javascript client for the Checkvist API.  
+
+If you just want to pull a single list or task out of Checkvist, you are
+probably better doing it yourself, but if you want a more full-featured
+client, this may help.
+
+See the html file for some examples.
+
+TODO:
+
+It needs tests and whatnot, but it seems to be mostly feature complete.
+
+CAVEATS:
+
+It does use require Cross-Origin XMLHttpRequest which in my case was fine since I am using it in a
+webOS app so that works fine but 
+
+You probably need to launch chrome with --disable-web-security or 
+--allow-file-access-from-files for testing.
