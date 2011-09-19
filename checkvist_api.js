@@ -1,9 +1,9 @@
-// $Id: checkvist_api.js,v 1.14 2011/08/22 06:34:15 andrew Exp $
+// $Id: checkvist_api.js,v 1.15 2011/09/19 18:28:49 andrew Exp $
 checkvist_api = function(spec) {
     var that = {};
     var my = {};
     spec = spec || {};
-    spec.baseURL = spec.baseURL || 'http://checkvist.com/';
+    spec.baseURL = spec.baseURL || 'https://checkvist.com/';
 
     my.serialize = function(obj) {
         var str = [];
@@ -28,6 +28,8 @@ checkvist_api = function(spec) {
 
         var qs = my.serialize(options.parameters);
 
+        //console.log(method + ' ' +  url + '?' + qs);
+
         if (method === 'GET' || method === 'DELETE') {
             url += '?' + qs;
         }
@@ -44,10 +46,18 @@ checkvist_api = function(spec) {
         xhReq.setRequestHeader("Connection", "close");
 
         xhReq.onreadystatechange = function(e) {
+            var location;
+
             if (xhReq.readyState !== 4) { return }
             clearTimeout(xmlHttpTimeout);
 
             if (xhReq.status === 200) {
+                location = xhReq.getResponseHeader('Location');
+                if (location && location.indexOf('http:') === 0) {
+                    console.log("Not using https");
+                    spec.baseURL = spec.baseURL.replace('https', 'http');
+                }
+
                 if (options.onSuccess) {
                     xhReq.responseJSON = JSON.parse(xhReq.responseText);
                     options.onSuccess(xhReq, e);
@@ -61,7 +71,9 @@ checkvist_api = function(spec) {
                     options.onError(xhReq, e);
                 }
                 else {
-                    console.log(xhReq, e);
+                    console.log(xhReq.status + ': ' + xhReq.statusText)
+                    console.log(xhReq)
+                    console.log(e);
                 }
             }
         }
@@ -69,10 +81,11 @@ checkvist_api = function(spec) {
         xhReq.send(qs);
 
         my.ajaxTimeout = function(){
+            xhReq.responseText = "Timed out";
             xhReq.abort();
             alert("Request timed out");
         };
-        var xmlHttpTimeout=setTimeout(my.ajaxTimeout,5000);
+        var xmlHttpTimeout=setTimeout(my.ajaxTimeout,30000);
     };
 
 
@@ -217,6 +230,11 @@ checkvist_api = function(spec) {
                     }
                 };
 
+                if (options.list_id) {
+                    options.content = '[list: ' + options.content
+                        + ' |' + options.list_id + ']';
+                }
+
                 for (i = 0; i < parameters.length; i++) {
                     options[ parameters[i] ] 
                         = options[ parameters[i] ] 
@@ -268,14 +286,6 @@ checkvist_api = function(spec) {
                         }
                     }
                 };
-
-                if (action === 'reopen') {
-                    // XXX This is because reopen could change parents
-                    // XXX but it returns children instead.
-                    callbacks.onSuccess = function(transport, callback) {
-                        thatL.getTask({id: thatT.id, onSuccess: callback});
-                    };
-                }
 
                 options.method = 'post';
                 my.request('checklists/' + thatL.id + '/tasks/' 
@@ -391,11 +401,21 @@ checkvist_api = function(spec) {
 
         thatL.getTasks = function(options) {
             options = options || {};
+            var taskMatch = /\[list:\s*([^|]+?)\s*\|\s*(\d+)\D/i;
             var parameters = [ 'with_notes' ];
             var callbacks  = {
                 onSuccess: function(transport, callback) {
-                    var i, items = [], j = transport.responseJSON;
+                    var i, list, items = [], j = transport.responseJSON;
                     for (i = 0; i < j.length; i++) {
+                        if (j[i].content.indexOf('[list:') === 0) {
+                            enyo.log(j[i].content);
+                            list = taskMatch.exec(j[i].content);
+                            if (list) {
+                                enyo.log(list[1]);
+                                j[i].content = list[1];
+                                j[i].list_id = list[2];
+                            }
+                        }
                         items.push( task(j[i]) ); 
                     };
                     if (callback) {
